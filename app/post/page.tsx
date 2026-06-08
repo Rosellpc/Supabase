@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { supabase } from "../utils/client";
 
@@ -9,19 +9,50 @@ export default function CreatePage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const getCurrentUserId = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      return user.id;
+    }
+
+    const { data, error } = await supabase.auth.signInAnonymously();
+
+    if (error || !data.user) {
+      throw new Error(
+        "No se pudo iniciar sesion. Activa Anonymous sign-ins en Supabase Auth o inicia sesion con otro proveedor."
+      );
+    }
+
+    return data.user.id;
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+
+    if (!file) {
+      return;
     }
+
+    if (!file.type.startsWith("image/")) {
+      setMessage({ type: "error", text: "Selecciona un archivo de imagen" });
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRemoveImage = () => {
@@ -33,15 +64,16 @@ export default function CreatePage() {
   };
 
   const uploadAndCreatePost = async (file: File) => {
-    const userId = "11111111-1111-1111-1111-111111111111";
-
-    // 1️⃣ Preparar nombre del archivo
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${file.name}-${Date.now()}.${fileExt}`;
+    const userId = await getCurrentUserId();
+    const fileExt = file.name.split(".").pop() || "jpg";
+    const safeBaseName = file.name
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-zA-Z0-9-_]/g, "-")
+      .toLowerCase();
+    const fileName = `${safeBaseName}-${Date.now()}.${fileExt}`;
     const filePath = `posts/${fileName}`;
 
-    // 2️⃣ Subir al bucket "images"
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from("images")
       .upload(filePath, file, {
         cacheControl: "3600",
@@ -49,36 +81,30 @@ export default function CreatePage() {
       });
 
     if (uploadError) {
-      console.error("❌ Error al subir imagen:", uploadError);
+      console.error("Error al subir imagen:", uploadError);
       throw uploadError;
     }
 
-    // 3️⃣ Obtener URL pública
     const { data: urlData } = supabase.storage
       .from("images")
       .getPublicUrl(filePath);
 
     const publicUrl = urlData.publicUrl;
 
-    console.log("📸 Imagen subida:", publicUrl);
-
-    // 4️⃣ Crear el post en la tabla posts_new
     const { data: postData, error: postError } = await supabase
       .from("posts_new")
       .insert({
         user_id: userId,
         image_url: publicUrl,
-        caption: caption,
+        caption,
         likes: 0,
       })
       .select("*");
 
     if (postError) {
-      console.error("❌ Error creando el post:", postError);
+      console.error("Error creando el post:", postError);
       throw postError;
     }
-
-    console.log("🆕 Post creado:", postData);
 
     return {
       uploadedImageUrl: publicUrl,
@@ -100,8 +126,7 @@ export default function CreatePage() {
     try {
       await uploadAndCreatePost(imageFile);
 
-      // Éxito
-      setMessage({ type: "success", text: "¡Post creado exitosamente!" });
+      setMessage({ type: "success", text: "Post creado exitosamente!" });
       setImageFile(null);
       setImagePreview(null);
       setCaption("");
@@ -120,7 +145,6 @@ export default function CreatePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-40 bg-card-bg border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-center">
           <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -129,10 +153,8 @@ export default function CreatePage() {
         </div>
       </header>
 
-      {/* Formulario */}
       <main className="max-w-lg mx-auto px-4 py-8">
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          {/* Área de carga de imagen */}
           <div className="flex flex-col gap-2">
             {imagePreview ? (
               <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-card-bg border border-border">
@@ -195,7 +217,7 @@ export default function CreatePage() {
                 </span>
               </label>
             )}
-            
+
             <input
               ref={fileInputRef}
               id="image-upload"
@@ -206,7 +228,6 @@ export default function CreatePage() {
             />
           </div>
 
-          {/* Caption */}
           <div className="flex flex-col gap-2">
             <textarea
               id="caption"
@@ -218,7 +239,6 @@ export default function CreatePage() {
             />
           </div>
 
-          {/* Mensaje de estado */}
           {message && (
             <div
               className={`px-4 py-3 rounded-xl text-sm ${
@@ -231,7 +251,6 @@ export default function CreatePage() {
             </div>
           )}
 
-          {/* Botón de enviar */}
           <button
             type="submit"
             disabled={isLoading || !imageFile}

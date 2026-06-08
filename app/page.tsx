@@ -7,6 +7,23 @@ import { type Post } from "./mocks/posts";
 
 import { supabase } from "./utils/client";
 
+const fallbackImageUrl =
+  "https://xynshcnkxdliapebmyaz.supabase.co/storage/v1/object/public/images/posts/unnamed-14.jpg";
+
+function getSafeImageUrl(imageUrl: string) {
+  try {
+    const url = new URL(imageUrl);
+
+    if (url.hostname === "example.com") {
+      return fallbackImageUrl;
+    }
+
+    return imageUrl;
+  } catch {
+    return fallbackImageUrl;
+  }
+}
+
 function HeartIcon({ filled }: { filled: boolean }) {
   if (filled) {
     return (
@@ -53,7 +70,7 @@ function PostCard({
           <Image
             src={
               post.user?.avatar ||
-              "https://xynshcnkxdliapebmyaz.supabase.co/storage/v1/object/public/images/posts/unnamed-14.jpg"
+              fallbackImageUrl
             }
             alt={post.user?.username || "default_user"}
             fill
@@ -73,7 +90,7 @@ function PostCard({
       {/* Imagen del post */}
       <div className="relative w-full aspect-square">
         <Image
-          src={post.image_url}
+          src={getSafeImageUrl(post.image_url)}
           alt={`Post de ${post.user?.username || "default_user"}`}
           fill
           className="object-cover"
@@ -111,18 +128,50 @@ function PostCard({
 export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
 
-  const handleLike = (postId: number | string) => {
+  const handleLike = async (postId: number | string) => {
+    const currentPost = posts.find((post) => post.id === postId);
+
+    if (!currentPost) {
+      return;
+    }
+
+    const nextIsLiked = !currentPost.isLiked;
+    const nextLikes = Math.max(
+      0,
+      nextIsLiked ? currentPost.likes + 1 : currentPost.likes - 1
+    );
+
     setPosts((prevPosts) =>
       prevPosts.map((post) =>
         post.id === postId
           ? {
               ...post,
-              isLiked: !post.isLiked,
-              likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+              isLiked: nextIsLiked,
+              likes: nextLikes,
             }
           : post
       )
     );
+
+    const { error } = await supabase
+      .from("posts_new")
+      .update({ likes: nextLikes })
+      .eq("id", postId);
+
+    if (error) {
+      console.error("Error al actualizar likes:", error);
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                isLiked: currentPost.isLiked,
+                likes: currentPost.likes,
+              }
+            : post
+        )
+      );
+    }
   };
 
   useEffect(() => {
@@ -135,7 +184,7 @@ export default function Home() {
       if (error) {
         console.error("Error al obtener los posts:", error);
       } else {
-        setPosts(data);
+        setPosts(data ?? []);
       }
     };
 
