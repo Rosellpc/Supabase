@@ -2,9 +2,12 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import RequireAuth from "../components/RequireAuth";
 import { supabase } from "../utils/client";
 
 export default function CreatePage() {
+  const router = useRouter();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
@@ -24,15 +27,7 @@ export default function CreatePage() {
       return user.id;
     }
 
-    const { data, error } = await supabase.auth.signInAnonymously();
-
-    if (error || !data.user) {
-      throw new Error(
-        "No se pudo iniciar sesion. Activa Anonymous sign-ins en Supabase Auth o inicia sesion con otro proveedor."
-      );
-    }
-
-    return data.user.id;
+    throw new Error("Debes iniciar sesion para crear un post.");
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,12 +87,11 @@ export default function CreatePage() {
     const publicUrl = urlData.publicUrl;
 
     const { data: postData, error: postError } = await supabase
-      .from("posts_new")
+      .from("posts")
       .insert({
         user_id: userId,
         image_url: publicUrl,
-        caption,
-        likes: 0,
+        caption: caption.trim(),
       })
       .select("*");
 
@@ -133,6 +127,7 @@ export default function CreatePage() {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+      router.push("/");
     } catch (error) {
       setMessage({
         type: "error",
@@ -144,7 +139,8 @@ export default function CreatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <RequireAuth>
+      <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 bg-card-bg border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-center">
           <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -286,6 +282,7 @@ export default function CreatePage() {
           </button>
         </form>
       </main>
-    </div>
+      </div>
+    </RequireAuth>
   );
 }

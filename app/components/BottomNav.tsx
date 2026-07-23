@@ -34,6 +34,45 @@ function RankIcon({ active }: { active: boolean }) {
   );
 }
 
+function SearchIcon({ active }: { active: boolean }) {
+  return active ? (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+      <path d="M10.5 3a7.5 7.5 0 015.99 12.012l4.248 4.248a.75.75 0 11-1.06 1.06l-4.248-4.248A7.5 7.5 0 1110.5 3zm0 1.5a6 6 0 100 12 6 6 0 000-12z" />
+    </svg>
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 3a7.5 7.5 0 105.99 12.012l4.248 4.248" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 3a7.5 7.5 0 015.99 12.012l4.248 4.248" />
+    </svg>
+  );
+}
+
+function BellIcon({ active }: { active: boolean }) {
+  return active ? (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+      <path d="M12 2.25a5.25 5.25 0 00-5.25 5.25v2.378c0 .548-.17 1.083-.487 1.53L4.2 13.605A1.5 1.5 0 005.43 16.5h13.14a1.5 1.5 0 001.23-2.895l-2.063-2.197a2.25 2.25 0 01-.487-1.53V7.5A5.25 5.25 0 0012 2.25z" />
+      <path d="M9.75 18a2.25 2.25 0 004.5 0h-4.5z" />
+    </svg>
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.513 23.513 0 01-3.257.258c-1.676 0-3.327-.175-4.912-.514M14.857 17.082A23.469 23.469 0 0018 16.5M14.857 17.082l1.45 1.45A2.25 2.25 0 0018 19.125v.375a2.25 2.25 0 01-2.25 2.25H8.25A2.25 2.25 0 016 19.5v-.375c0-.597.237-1.17.658-1.591l1.45-1.45m6.749 0a2.25 2.25 0 00-1.591-.658H10.64a2.25 2.25 0 00-1.591.658M6.75 9.75a5.25 5.25 0 1110.5 0c0 1.135.364 2.228 1.024 3.137l1.82 2.505H3.906l1.82-2.505A5.25 5.25 0 016.75 9.75z" />
+    </svg>
+  );
+}
+
+function ProfileIcon({ active }: { active: boolean }) {
+  return active ? (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+      <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zm-2.25 12A6.75 6.75 0 0112 11.25 6.75 6.75 0 0118.75 18v1.5a.75.75 0 01-.75.75H6a.75.75 0 01-.75-.75V18z" clipRule="evenodd" />
+    </svg>
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 10-7.5 0 3.75 3.75 0 007.5 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 20.25A8.25 8.25 0 0112 15a8.25 8.25 0 017.5 5.25" />
+    </svg>
+  );
+}
+
 function PlusIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
@@ -51,7 +90,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card-bg border-t border-border">
-      <div className="max-w-lg mx-auto flex items-center justify-around py-2">
+      <div className="mx-auto grid max-w-2xl grid-cols-5 items-center py-2">
         <Link
           href="/"
           className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${
@@ -63,20 +102,40 @@ export default function BottomNav() {
         </Link>
 
         <Link
+          href="/search"
+          className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${
+            pathname.startsWith("/search") ? "text-primary" : "text-foreground/60 hover:text-foreground"
+          }`}
+        >
+          <SearchIcon active={pathname.startsWith("/search")} />
+          <span className="text-xs font-medium">Search</span>
+        </Link>
+
+        <Link
           href="/post"
-          className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-primary to-accent text-white shadow-lg hover:scale-105 transition-transform"
+          className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-primary to-accent text-white shadow-lg transition-transform hover:scale-105"
         >
           <PlusIcon />
         </Link>
 
         <Link
-          href="/rank"
+          href="/notifications"
           className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${
-            pathname === "/rank" ? "text-primary" : "text-foreground/60 hover:text-foreground"
+            pathname.startsWith("/notifications") ? "text-primary" : "text-foreground/60 hover:text-foreground"
           }`}
         >
-          <RankIcon active={pathname === "/rank"} />
-          <span className="text-xs font-medium">Rank</span>
+          <BellIcon active={pathname.startsWith("/notifications")} />
+          <span className="text-xs font-medium">Activity</span>
+        </Link>
+
+        <Link
+          href="/profile"
+          className={`flex flex-col items-center gap-1 px-4 py-2 transition-colors ${
+            pathname.startsWith("/profile") ? "text-primary" : "text-foreground/60 hover:text-foreground"
+          }`}
+        >
+          <ProfileIcon active={pathname.startsWith("/profile")} />
+          <span className="text-xs font-medium">Profile</span>
         </Link>
       </div>
     </nav>
